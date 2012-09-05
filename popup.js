@@ -6,6 +6,7 @@ Popup = {
     },
 
     loadItems: function(items) {
+        delete items.last_save;
         for (var key in items) {
             var value = items[key];
             var elem = "<li><a href=" + key + ">" + new Date(parseInt(key));
