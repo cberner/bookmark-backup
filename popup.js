@@ -1,9 +1,35 @@
 Popup = {
+    refreshItems: function() {
+        //Remove all the children before repopulating
+        $("body ul").children().remove();
+        chrome.storage.local.get(null, Popup.loadItems);
+    },
+
     loadItems: function(items) {
         for (var key in items) {
             var value = items[key];
-            $("body ul").append("<li>" + key + "</li>");
+            var elem = "<li><a href=" + key + ">" + new Date(parseInt(key));
+            elem += "</a> <span class=delete>&times;</span></li>";
+            $("body ul").append(elem);
         }
+        $("body ul li a").on('click', function() {
+            var key = $(this).attr('href');
+            key = "" + key; //Cast to string
+            chrome.storage.local.get(key, function(items) {
+                console.log(items);
+                var html = Popup.bookmarksToHtml(items[key][0].children);
+                saveAs(new Blob([html], {type: "text/html"}), "bookmarks.html");
+            });
+            return false;
+        });
+
+        $("body ul li .delete").on('click', function() {
+            var key = $(this).siblings('a').attr('href');
+            key = "" + key; //Cast to string
+            chrome.storage.local.remove(key);
+
+            Popup.refreshItems();
+        });
     },
 
     nodeToHtml: function(node, indent) {
@@ -58,13 +84,17 @@ Popup = {
     }
 }
 
-chrome.storage.local.get(null, Popup.loadItems);
+Popup.refreshItems();
 
 $(document).ready(function() {
-    $("#download1").on('click', function() {
+    $("#save_now").on('click', function() {
         chrome.bookmarks.getTree(function(tree) {
-            var html = Popup.bookmarksToHtml(tree[0].children);
-            saveAs(new Blob([html], {type: "text/html"}), "bookmarks.html");
+            var date = new Date().getTime();
+            var item = {};
+            item[date] = tree;
+            chrome.storage.local.set(item);
+
+            Popup.refreshItems();
         });
     });
 });
